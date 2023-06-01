@@ -15,7 +15,7 @@ def FindSqlAnswer(topK, question, embeddingModelType, value):
     answer = ''
 
     try:
-        synapseConnectionString = "Driver={{ODBC Driver 17 for SQL Server}};Server=tcp:{};" \
+        synapseConnectionString = "Driver={{ODBC Driver 18 for SQL Server}};Server=tcp:{};" \
                       "Database={};Uid={};Pwd={};Encrypt=yes;TrustServerCertificate=no;" \
                       "Connection Timeout=30;".format(SynapseName, SynapsePool, SynapseUser, SynapsePassword)
         params = urllib.parse.quote_plus(synapseConnectionString)
