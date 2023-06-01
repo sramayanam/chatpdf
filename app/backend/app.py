@@ -66,9 +66,25 @@ def askAgent():
         #return json.dumps(jsonDict)
         return jsonify(jsonDict)
     except Exception as e:
-        logging.exception("Exception in /ask")
+        logging.exception("Exception in /askAgent")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/smartAgent", methods=["POST"])
+def smartAgent():
+    postBody=request.json["postBody"]
+ 
+    try:
+        headers = {'content-type': 'application/json'}
+        url = os.environ.get("SMARTAGENT_URL")
+
+        data = postBody
+        resp = requests.post(url, data=json.dumps(data), headers=headers)
+        jsonDict = json.loads(resp.text)
+        return jsonify(jsonDict)
+    except Exception as e:
+        logging.exception("Exception in /smartAgent")
+        return jsonify({"error": str(e)}), 500
+    
 @app.route("/askTaskAgent", methods=["POST"])
 def askTaskAgent():
     postBody=request.json["postBody"]
@@ -109,6 +125,30 @@ def chat():
         logging.exception("Exception in /chat")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/summaryAndQa", methods=["POST"])
+def summaryAndQa():
+    indexType=request.json["indexType"]
+    indexNs=request.json["indexNs"]
+    embeddingModelType=request.json["embeddingModelType"]
+    requestType=request.json["requestType"]
+    chainType=request.json["chainType"]
+    postBody=request.json["postBody"]
+    
+    try:
+        headers = {'content-type': 'application/json'}
+        url = os.environ.get("SUMMARYQA_URL")
+
+        data = postBody
+        params = {'indexType': indexType, "indexNs": indexNs, 'embeddingModelType': embeddingModelType, "requestType": requestType,
+                  'chainType': chainType  }
+        resp = requests.post(url, params=params, data=json.dumps(data), headers=headers)
+        jsonDict = json.loads(resp.text)
+        #return json.dumps(jsonDict)
+        return jsonify(jsonDict)
+    except Exception as e:
+        logging.exception("Exception in /summaryAndQa")
+        return jsonify({"error": str(e)}), 500
+    
 @app.route("/chat3", methods=["POST"])
 def chat3():
     indexType=request.json["indexType"]
@@ -201,6 +241,70 @@ def processDoc():
         logging.exception("Exception in /processDoc")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/processSummary", methods=["POST"])
+def processSummary():
+    multiple=request.json["multiple"]
+    loadType=request.json["loadType"]
+    embeddingModelType=request.json["embeddingModelType"]
+    chainType=request.json["chainType"]
+    postBody=request.json["postBody"]
+   
+    try:
+        headers = {'content-type': 'application/json'}
+        url = os.environ.get("PROCESSSUMMARY_URL")
+
+        data = postBody
+        params = { "multiple": multiple , "loadType": loadType, "embeddingModelType": embeddingModelType, "chainType": chainType}
+        resp = requests.post(url, params=params, data=json.dumps(data), headers=headers)
+        jsonDict = json.loads(resp.text)
+        return jsonify(jsonDict)
+    except Exception as e:
+        logging.exception("Exception in /processSummary")
+        return jsonify({"error": str(e)}), 500
+    
+@app.route("/convertCode", methods=["POST"])
+def convertCode():
+    inputLanguage=request.json["inputLanguage"]
+    outputLanguage=request.json["outputLanguage"]
+    modelName=request.json["modelName"]
+    embeddingModelType=request.json["embeddingModelType"]
+    postBody=request.json["postBody"]
+   
+    try:
+        headers = {'content-type': 'application/json'}
+        url = os.environ.get("CONVERTCODE_URL")
+
+        data = postBody
+        params = {'inputLanguage': inputLanguage, "outputLanguage": outputLanguage, "modelName": modelName , 
+                  "embeddingModelType": embeddingModelType}
+        resp = requests.post(url, params=params, data=json.dumps(data), headers=headers)
+        jsonDict = json.loads(resp.text)
+        return jsonify(jsonDict)
+    except Exception as e:
+        logging.exception("Exception in /convertCode")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/promptGuru", methods=["POST"])
+def promptGuru():
+    task=request.json["task"]
+    modelName=request.json["modelName"]
+    embeddingModelType=request.json["embeddingModelType"]
+    postBody=request.json["postBody"]
+   
+    try:
+        headers = {'content-type': 'application/json'}
+        url = os.environ.get("PROMPTGURU_URL")
+
+        data = postBody
+        params = {'task': task, "modelName": modelName , 
+                  "embeddingModelType": embeddingModelType}
+        resp = requests.post(url, params=params, data=json.dumps(data), headers=headers)
+        jsonDict = json.loads(resp.text)
+        return jsonify(jsonDict)
+    except Exception as e:
+        logging.exception("Exception in /promptGuru")
+        return jsonify({"error": str(e)}), 500
+    
 @app.route("/verifyPassword", methods=["POST"])
 def verifyPassword():
     passType=request.json["passType"]
@@ -325,6 +429,29 @@ def uploadBinaryFile():
         return jsonify({'message': 'File uploaded successfully'}), 200
     except Exception as e:
         logging.exception("Exception in /uploadBinaryFile")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/uploadSummaryBinaryFile", methods=["POST"])
+def uploadSummaryBinaryFile():
+   
+    try:
+        if 'file' not in request.files:
+            return jsonify({'message': 'No file in request'}), 400
+        
+        file = request.files['file']
+        fileName = file.filename
+        blobName = os.path.basename(fileName)
+
+        url = os.environ.get("BLOB_CONNECTION_STRING")
+        summaryContainerName = os.environ.get("BLOB_SUMMARY_CONTAINER_NAME")
+        blobServiceClient = BlobServiceClient.from_connection_string(url)
+        containerClient = blobServiceClient.get_container_client(summaryContainerName)
+        blobClient = containerClient.get_blob_client(blobName)
+        #blob_client.upload_blob(bytes_data,overwrite=True, content_settings=ContentSettings(content_type=content_type))
+        blobClient.upload_blob(file.read(), overwrite=True)
+        return jsonify({'message': 'File uploaded successfully'}), 200
+    except Exception as e:
+        logging.exception("Exception in /uploadSummaryBinaryFile")
         return jsonify({"error": str(e)}), 500
 
 # Serve content files from blob storage from within the app to keep the example self-contained. 

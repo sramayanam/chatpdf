@@ -68,8 +68,23 @@ const Layout = () => {
                                 </NavLink>
                             </li>
                             <li className={styles.headerNavLeftMargin}>
+                                <NavLink to="/summary" className={({ isActive }) => (isActive ? styles.headerNavPageLinkActive : styles.headerNavPageLink)}>
+                                    Summarization
+                                </NavLink>
+                            </li>
+                            <li className={styles.headerNavLeftMargin}>
                                 <NavLink to="/sql" className={({ isActive }) => (isActive ? styles.headerNavPageLinkActive : styles.headerNavPageLink)}>
                                     Sql NLP
+                                </NavLink>
+                            </li>
+                            <li className={styles.headerNavLeftMargin}>
+                                <NavLink to="/smartagent" className={({ isActive }) => (isActive ? styles.headerNavPageLinkActive : styles.headerNavPageLink)}>
+                                    Smart Agent
+                                </NavLink>
+                            </li>
+                            <li className={styles.headerNavLeftMargin}>
+                                <NavLink to="/developer" className={({ isActive }) => (isActive ? styles.headerNavPageLinkActive : styles.headerNavPageLink)}>
+                                    Developer Tools
                                 </NavLink>
                             </li>
                             { showSpeech && (

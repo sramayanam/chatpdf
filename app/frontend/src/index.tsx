@@ -17,6 +17,9 @@ import Edgar from "./pages/edgar/Edgar";
 import BotChat from "./pages/botchat/BotChat";
 import Speech from "./pages/speech/Speech";
 import Admin from "./pages/admin/Admin";
+import DeveloperTools from "./pages/developertools/DeveloperTools";
+import SmartAgent from "./pages/smartagent/SmartAgent";
+import Summary from "./pages/summary/Summary";
 
 initializeIcons();
 
@@ -29,6 +32,9 @@ export default function App() {
                     {/* <Route path="chat" element={<Chat />} /> */}
                     <Route path="qa" element={<OneShot />} />
                     <Route path="sql" element={<SqlAgent />} />
+                    <Route path="summary" element={<Summary />} />
+                    <Route path="smartagent" element={<SmartAgent />} />
+                    <Route path="developer" element={<DeveloperTools />} />
                     {/* <Route path="botchat" element={<BotChat />} /> */}
                     <Route path="edgar" element={<Edgar />} />
                     <Route path="speech" element={<Speech />} />

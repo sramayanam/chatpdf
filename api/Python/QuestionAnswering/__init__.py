@@ -18,9 +18,11 @@ from Utilities.redisIndex import performRedisSearch
 from Utilities.cogSearch import performCogSearch
 from langchain.prompts import load_prompt
 from Utilities.envVars import *
+from langchain.agents import create_csv_agent
+from Utilities.azureBlob import getLocalBlob, getFullPath
 
-def FindAnswer(chainType, question, indexType, value, indexNs, approach, overrides):
-    logging.info("Calling FindAnswer Open AI")
+def QaAnswer(chainType, question, indexType, value, indexNs, approach, overrides):
+    logging.info("Calling QaAnswer Open AI")
     answer = ''
     
     try:
@@ -38,6 +40,7 @@ def FindAnswer(chainType, question, indexType, value, indexNs, approach, overrid
             openai.api_key = OpenAiKey
             openai.api_version = OpenAiVersion
             openai.api_base = f"https://{OpenAiService}.openai.azure.com"
+
             llm = AzureOpenAI(deployment_name=OpenAiDavinci,
                     temperature=temperature,
                     openai_api_key=OpenAiKey,
@@ -75,6 +78,16 @@ def FindAnswer(chainType, question, indexType, value, indexNs, approach, overrid
                 #qaChain = load_qa_chain(llm, chain_type=overrideChain, prompt=qaPrompt)
                 qaChain = load_qa_with_sources_chain(llm, chain_type=overrideChain, prompt=qaPrompt)
 
+                # followupTemplate = """
+                # Perform the following steps in a consecutive order Step 1, Step 2, Step 3, and Step 4. 
+                # Step 1 Generate 10 questions based on the {context}?. 
+                # Step 2 – Generate 5 more questions about "{context}" that do not repeat the above. 
+                # Step 3 – Generate 5 more questions about "{context}" that do not repeat the above. 
+                # Step 4 – Based on the above Steps 1,2,3 suggest a final list of questions avoiding duplicates or 
+                # semantically similar questions.
+                # Use double angle brackets to reference the questions, e.g. <>.
+                # ALWAYS return a "NEXT QUESTIONS" part in your answer.
+                # """
                 followupTemplate = """
                 Generate three very brief follow-up questions that the user would likely ask next.
                 Use double angle brackets to reference the questions, e.g. <>.
@@ -206,6 +219,7 @@ def FindAnswer(chainType, question, indexType, value, indexNs, approach, overrid
                 )
                 qaChain = load_qa_chain(llm, chain_type=overrideChain, question_prompt=qaPrompt, refine_prompt=refinePrompt)
 
+                
                 followupTemplate = """
                 Generate three very brief follow-up questions that the user would likely ask next.
                 Use double angle brackets to reference the questions, e.g. <>.
@@ -295,9 +309,9 @@ def FindAnswer(chainType, question, indexType, value, indexNs, approach, overrid
                                 "sources": sources, "nextQuestions": nextQuestions, "error": ""}
                 except Exception as e:
                     return {"data_points": "", "answer": "Working on fixing Redis Implementation - Error : " + str(e), "thoughts": "", "sources": "", "nextQuestions": "", "error":  str(e)}
-            elif indexType == "cogsearch":
+            elif indexType == "cogsearch" or indexType == "cogsearchvs":
                 try:
-                    r = performCogSearch(question, indexNs, topK)
+                    r = performCogSearch(indexType, embeddingModelType, question, indexNs, topK)
                     if r == None:
                         docs = [Document(page_content="No results found")]
                     else :
@@ -308,7 +322,7 @@ def FindAnswer(chainType, question, indexType, value, indexNs, approach, overrid
                     rawDocs=[]
                     for doc in docs:
                         rawDocs.append(doc.page_content)
-                                        
+                    
                     answer = qaChain({"input_documents": docs, "question": question}, return_only_outputs=True)
                     answer = answer['output_text'].replace("Answer: ", '').replace("Sources:", 'SOURCES:').replace("Next Questions:", 'NEXT QUESTIONS:')
                     modifiedAnswer = answer
@@ -336,6 +350,16 @@ def FindAnswer(chainType, question, indexType, value, indexNs, approach, overrid
                                 "sources": sources, "nextQuestions": nextQuestions, "error": ""}
                 except Exception as e:
                     return {"data_points": "", "answer": "Working on fixing Cognitive Search Implementation - Error : " + str(e), "thoughts": "", "sources": "", "nextQuestions": "", "error":  str(e)}
+            elif indexType == "csv":
+                downloadPath = getLocalBlob(OpenAiDocConnStr, OpenAiDocContainer, '', indexNs)
+                agent = create_csv_agent(llm, downloadPath, verbose=True)
+                answer = agent.run(question)
+                sources = getFullPath(OpenAiDocConnStr, OpenAiDocContainer, os.path.basename(downloadPath))
+                return {"data_points": '', "answer": answer, 
+                            "thoughts": '',
+                                "sources": sources, "nextQuestions": '', "error": ""}
+
+
             elif indexType == 'milvus':
                 answer = "{'answer': 'TBD', 'sources': ''}"
                 return answer
@@ -348,7 +372,7 @@ def FindAnswer(chainType, question, indexType, value, indexNs, approach, overrid
     
 
     except Exception as e:
-      logging.info("Error in FindAnswer Open AI : " + str(e))
+      logging.info("Error in QaAnswer Open AI : " + str(e))
       return {"data_points": "", "answer": "Exception during finding answers - Error : " + str(e), "thoughts": "", "sources": "", "nextQuestions": "", "error":  str(e)}
 
     #return answer
@@ -441,7 +465,7 @@ def TransformValue(chainType, question, indexType, record, indexNs):
         approach = data['approach']
         overrides = data['overrides']
 
-        answer = FindAnswer(chainType, question, indexType, value, indexNs, approach, overrides)
+        answer = QaAnswer(chainType, question, indexType, value, indexNs, approach, overrides)
         return ({
             "recordId": recordId,
             "data": answer

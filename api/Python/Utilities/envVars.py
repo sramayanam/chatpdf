@@ -12,6 +12,11 @@ try:
     OpenAiDocConnStr = f"DefaultEndpointsProtocol=https;AccountName={OpenAiDocStorName};AccountKey={OpenAiDocStorKey};EndpointSuffix=core.windows.net"
     OpenAiDocContainer = os.environ['OpenAiDocContainer']
 
+    if "OpenAiSummaryContainer" in os.environ: 
+        OpenAiSummaryContainer = os.environ['OpenAiSummaryContainer']
+    else:
+        OpenAiSummaryContainer = "summary"
+
     if "SecDocContainer" in os.environ: 
         SecDocContainer = os.environ['SecDocContainer']
     else:
@@ -46,6 +51,26 @@ try:
         RedisPort = os.environ['RedisPort']
     else:
         RedisPort = ""
+
+    if "SearchKey" in os.environ: 
+        SearchKey = os.environ['SearchKey']
+    else:
+        SearchKey = ""
+
+    if "SearchService" in os.environ: 
+        SearchService = os.environ['SearchService']
+    else:
+        SearchService = ""
+
+    if "BingUrl" in os.environ: 
+        BingUrl = os.environ['BingUrl']
+    else:
+        BingUrl = ""
+
+    if "BingKey" in os.environ: 
+        BingKey = os.environ['BingKey']
+    else:
+        BingKey = ""
 
     OpenAiEmbedding = os.environ['OpenAiEmbedding']
     UploadPassword = os.environ['UploadPassword'] or ''

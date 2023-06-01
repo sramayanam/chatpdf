@@ -15,6 +15,7 @@
     },
     "variables": {
 		"langSvcName": "[concat(parameters('prefix'), 'lang')]",
+        "bingSvcName": "[concat(parameters('prefix'), 'bing')]",
         "frSvcName": "[concat(parameters('prefix'), 'fr')]",
         "speechSvcName": "[concat(parameters('prefix'), 'speech')]",
 		"aoaiSvcName": "[concat(parameters('prefix'), 'aoai')]",
@@ -51,6 +52,17 @@
                 },
                 "publicNetworkAccess": "Enabled"
             }
+        },
+        {
+            "type": "Microsoft.Bing/accounts",
+            "apiVersion": "2020-06-10",
+            "name": "[variables('bingSvcName')]",
+            "location": "global",
+            "sku": {
+                "name": "S1"
+            },
+            "kind": "Bing.Search.v7",
+            "properties": {}
         },
         {
             "type": "Microsoft.CognitiveServices/accounts",
@@ -468,6 +480,10 @@
 						  "name": "BLOB_CONTAINER_NAME",
 						  "value": "chatpdf"
 						},
+                        {
+                            "name": "BLOB_SUMMARY_CONTAINER_NAME",
+                            "value": "summary"
+                        },
 						{
 						  "name": "ENABLE_ORYX_BUILD",
 						  "value": "True"
@@ -482,9 +498,21 @@
                             
                         },
                         {
+                            "name": "SMARTAGENT_URL",
+                            "value": "[concat('https://', variables('funcAppName'), '.azurewebsites.net/api/SmartAgent?code=', listkeys(concat(resourceId('Microsoft.Web/sites', variables('funcAppName')), '/host/default'), '2018-11-01').functionKeys.default)]"
+                        },
+                        {
                             "name": "TASKAGENTQA_URL",
                             "value": "[concat('https://', variables('funcAppName'), '.azurewebsites.net/api/TaskAgentQa?code=', listkeys(concat(resourceId('Microsoft.Web/sites', variables('funcAppName')), '/host/default'), '2018-11-01').functionKeys.default)]"
                             
+                        },
+                        {
+                            "name": "CONVERTCODE_URL",
+                            "value": "[concat('https://', variables('funcAppName'), '.azurewebsites.net/api/ConvertCode?code=', listkeys(concat(resourceId('Microsoft.Web/sites', variables('funcAppName')), '/host/default'), '2018-11-01').functionKeys.default)]"
+                        },
+                        {
+                            "name": "PROMPTGURU_URL",
+                            "value": "[concat('https://', variables('funcAppName'), '.azurewebsites.net/api/PromptGuru?code=', listkeys(concat(resourceId('Microsoft.Web/sites', variables('funcAppName')), '/host/default'), '2018-11-01').functionKeys.default)]"
                         },
 						{
 						  "name": "AGENTQA_URL",
@@ -571,6 +599,7 @@
             "dependsOn": [
                 "[resourceId('Microsoft.Web/serverfarms', variables('aspName'))]",
 				"[resourceId('Microsoft.CognitiveServices/accounts', variables('aoaiSvcName'))]",
+                "[resourceId('Microsoft.Bing/accounts', variables('bingsvcName'))]",
 				"[resourceId('Microsoft.Search/searchServices', variables('searchSvcName'))]",
 				"[resourceId('Microsoft.Sql/servers', variables('sqlSrvName'))]",
 				"[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]",
@@ -639,6 +668,14 @@
 						  "value": "python"
 						},
                         {
+                            "name": "BingUrl",
+                            "value": "https://api.bing.microsoft.com/v7.0/search"
+                        },
+                        {
+                            "name": "BingKey",
+                            "value": "[listKeys(resourceId('Microsoft.Bing/accounts', variables('bingsvcName')), '2020-06-10').key1]"
+                        },
+                        {
                             "name": "UploadPassword",
                             "value": "P@ssw0rd"
                         },
@@ -670,6 +707,10 @@
 						  "name": "OpenAiDocContainer",
 						  "value": "chatpdf"
 						},
+                        {
+                            "name": "OpenAiSummaryContainer",
+                            "value": "summary"
+                        },
                         {
                             "name": "OpenAiDocStorConnString",
                             "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', variables('storageName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageName')), '2022-05-01').keys[0].value)]"
@@ -1210,6 +1251,23 @@
             "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
             "apiVersion": "2022-09-01",
             "name": "[concat(variables('storageName'), '/default/chatpdf')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', variables('storageName'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"
+            ],
+            "properties": {
+                "immutableStorageWithVersioning": {
+                    "enabled": false
+                },
+                "defaultEncryptionScope": "$account-encryption-key",
+                "denyEncryptionScopeOverride": false,
+                "publicAccess": "None"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+            "apiVersion": "2022-09-01",
+            "name": "[concat(variables('storageName'), '/default/summary')]",
             "dependsOn": [
                 "[resourceId('Microsoft.Storage/storageAccounts/blobServices', variables('storageName'), 'default')]",
                 "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"
